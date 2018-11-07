@@ -33,3 +33,4 @@ def process_file_mul(input_file, process_fun, output_file, num_thread):
                 writer.write('\n')
 
     print(f'Done.')
+

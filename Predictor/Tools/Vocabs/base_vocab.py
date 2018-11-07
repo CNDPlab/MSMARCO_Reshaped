@@ -35,12 +35,16 @@ class Vocab(object):
         except:
             return 1
 
+    def random_init(self, embedding_size):
+        matrix = t.nn.Embedding(len(self.token2id), embedding_size, padding_idx=self.token2id['<PAD>']).weight
+        self.matrix = matrix
+
     def use_pretrained(self, model):
         w2v = model.wv
         matrix = t.nn.Embedding(len(self.token2id), model.vector_size, padding_idx=self.token2id['<PAD>']).weight
         oovs = []
         with t.no_grad():
-            for i in range(len(self.token2id)):
+            for i in tqdm(range(len(self.token2id))):
                 if self.id2token[i] in w2v:
                     matrix[i, :] = t.Tensor(w2v[self.id2token[i]])
                 else:
