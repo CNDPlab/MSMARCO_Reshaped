@@ -1,31 +1,25 @@
-from Predictor.Utils.ScoreFunc.RougeScore import Rouge
+from Predictor.Tools.Matrixs import Rouge
+import numpy as np
+import bisect
 import time
 import ipdb
 """
-processed_structure = {
+    processed_structure = {
         'have_answer': None,
+        'yes_no': None,
         'answers': {
             index: {
-                'text': '',
-                'pos': None,
-                'ner': None,
-                'rouge': None,
-                'span': None,
-                'target_p': None
-            } for index in range(10)
+                'text': '', 'char': '', 'pos': '', 'ner': ''
+            } for index in range(answer_num)
         },
-        'question': {'text': '', 'pos': None, 'ner': None},
+        'question': {'text': '', 'pos': '', 'ner': ''},
         'passages': {
             index: {
-                'is_selected': None,
-                'text': '',
-                'pos': None,
-                'ner': None,
-                'is_in_question': None,
-                'rouge_score': None
-            } for index in range(10)
+                'is_selected': None, 'text': '', 'char': '', 'pos': '', 'ner': ''
+            } for index in range(11)
         },
-        'golden_span': {'start': 0, 'end': 0, 'passage_index': -1, 'answer_index': -1, 'score': 0}
+
+        'golden_span': {'start': None, 'end': None, 'passage_index': None, 'answer_index': None, 'score': 0}
     }
 """
 rouge = Rouge()
@@ -33,20 +27,35 @@ rouge = Rouge()
 
 def extract_golden_span(instance):
     #start = time.time()
+
     if not instance['have_answer']:
-        instance['golden_span'] = {'start': 0, 'end': 0, 'passage_index': -1, 'answer_index': -1, 'score': 0}
+        instance['golden_span']['start'] = 0
+        instance['golden_span']['end'] = 3
+        instance['golden_span']['passage_index'] = 10
+        instance['golden_span']['score'] = 1
+        instance['golden_span']['answer_index'] = 0
+
     else:
+
         for answer_index, answer in instance['answers'].items():
-            if answer['text'] is not None:
+            if answer['text'] != '':
                 for passage_index, passage in instance['passages'].items():
-                    if passage['is_selected']:
-                        local_best_result = find_best_span(answer['text'], passage['text'])
-                        if local_best_result['score'] > instance['golden_span']['score']:
-                            instance['golden_span']['start'] = local_best_result['start']
-                            instance['golden_span']['end'] = local_best_result['end']
+                    if passage['is_selected'] and passage['text'] != '':
+                        pos = ' '.join(passage['text']).find(' '.join(answer['text']))
+                        if pos != -1:
+                            instance['golden_span']['start'] = bisect.bisect(np.cumsum([1 + len(t) for t in passage['text']]), pos)
+                            instance['golden_span']['end'] = instance['golden_span']['start'] + len(answer['text'])
                             instance['golden_span']['passage_index'] = passage_index
-                            instance['golden_span']['score'] = local_best_result['score']
+                            instance['golden_span']['score'] = 1
                             instance['golden_span']['answer_index'] = answer_index
+                        else:
+                            local_best_result = find_best_span(answer['text'], passage['text'])
+                            if local_best_result['score'] > instance['golden_span']['score']:
+                                instance['golden_span']['start'] = local_best_result['start']
+                                instance['golden_span']['end'] = local_best_result['end']
+                                instance['golden_span']['passage_index'] = passage_index
+                                instance['golden_span']['score'] = local_best_result['score']
+                                instance['golden_span']['answer_index'] = answer_index
     #end = time.time()
     #print(f'use:{end-start} ansl:{instance["golden_span"]["end"]-instance["golden_span"]["start"]}')
     return instance
@@ -79,8 +88,8 @@ def find_best_span(answer, passage):
             if start_token in answer:
                 result = {
                     str(start_index) + ',' + str(start_index+offset): rouge.calc_score([passage[start_index: start_index + offset+1]], [answer])
-                    if offset > answer_lenth*0.6 else 0
-                    for offset, _ in enumerate(passage[start_index: start_index+int(answer_lenth*1.4)])
+                    if offset > answer_lenth * 0.6 else 0
+                    for offset, _ in enumerate(passage[start_index: start_index+int(answer_lenth * 1.4)])
                 }
                 local_best_span = max(result, key=result.get)
                 local_best_score = result[local_best_span]
@@ -92,7 +101,7 @@ def find_best_span(answer, passage):
         for start_index, start_token in enumerate(passage):
             if start_token in answer:
                 result = {str(start_index) + ',' + str(start_index+offset): rouge.calc_score([passage[start_index: start_index+offset+1]], [answer])
-                          if offset > answer_lenth*0.8 else 0
+                          if offset > answer_lenth * 0.8 else 0
                           for offset, _ in enumerate(passage[start_index: start_index+int(answer_lenth * 1.2)])}
                 local_best_span = max(result, key=result.get)
                 local_best_score = result[local_best_span]
