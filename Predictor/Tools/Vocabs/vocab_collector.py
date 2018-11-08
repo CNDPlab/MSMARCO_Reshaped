@@ -17,7 +17,7 @@ class VocabCollector(object):
                 instance['passages'][index]['char'] = [[self.char_vocab.from_token_id(char) for char in word] for word in passage['char']]
 
         instance['question']['text'] = [self.word_vocab.from_token_id(i) for i in instance['question']['text']]
-        instance['passages']['char'] = [[self.char_vocab.from_token_id(char) for char in word] for word in instance['question']['char']]
+        instance['question']['char'] = [[self.char_vocab.from_token_id(char) for char in word] for word in instance['question']['char']]
         return instance
 
     def transfer_char(self, instance):

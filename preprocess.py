@@ -62,3 +62,22 @@ for file in files:
         os.path.join(DefaultConfig.processed_folder, file+'.json'),
         20
     )
+
+
+os.rename(
+    os.path.join(DefaultConfig.processed_folder, 'train.json'),
+    os.path.join(DefaultConfig.processed_folder, 'train_tmp.json')
+)
+
+# drop train :score < 0.8 and have_answer = True
+count = 0
+with open(os.path.join(DefaultConfig.processed_folder, 'train_tmp.json')) as reader:
+    with open(os.path.join(DefaultConfig.processed_folder, 'train.json'), 'w') as writer:
+        for i in tqdm(reader):
+            line = json.loads(i)
+            if line['golden_span']['score'] > 0.7:
+                json.dump(line, writer)
+                writer.write('\n')
+            else:
+                count += 1
+print(f'{count} droped')
