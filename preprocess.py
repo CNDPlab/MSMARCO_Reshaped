@@ -50,6 +50,7 @@ word_vocab.use_pretrained(model)
 word_vocab.save(DefaultConfig.word_vocab)
 
 char_vocab.filter_rare_word_build_vocab(300)
+char_vocab.random_init(DefaultConfig.char_embedding_dim)
 char_vocab.save(DefaultConfig.char_vocab)
 
 from Predictor.Tools.DataTools.convert2id import convert2id
@@ -80,4 +81,32 @@ with open(os.path.join(DefaultConfig.processed_folder, 'train_tmp.json')) as rea
                 writer.write('\n')
             else:
                 count += 1
+
+
 print(f'{count} droped')
+#############
+os.rename(
+    os.path.join(DefaultConfig.processed_folder, 'dev.json'),
+    os.path.join(DefaultConfig.processed_folder, 'dev_tmp.json')
+)
+
+count = 0
+with open(os.path.join(DefaultConfig.processed_folder, 'dev_tmp.json')) as reader:
+    with open(os.path.join(DefaultConfig.processed_folder, 'dev.json'), 'w') as writer:
+        for i in tqdm(reader):
+            line = json.loads(i)
+            if line['golden_span']['score'] > 0:
+                json.dump(line, writer)
+                writer.write('\n')
+            else:
+                count += 1
+
+
+print(f'{count} droped')
+
+
+#######
+import pickle as pk
+char_vocab = pk.load(DefaultConfig.char_vocab, 'rb')
+char_vocab.random_init(DefaultConfig.char_embedding_dim)
+char_vocab.save(DefaultConfig.char_vocab)

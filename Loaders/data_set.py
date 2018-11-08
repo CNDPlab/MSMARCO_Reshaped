@@ -7,6 +7,7 @@ from configs import DefaultConfig
 import os
 import json
 import itertools
+from tqdm import tqdm
 from Predictor.Tools.DataTools.pad import pad
 
 
@@ -24,65 +25,40 @@ class MSDataSet(Dataset):
 
     def __getitem__(self, item):
         line = json.loads(self.data[item])
+        line['passages'] = sorted(line['passages'].items(), key=lambda x: int(x[0]), reverse=False)
         question_word = line['question']['text']
         question_char = [list(pad(word, DefaultConfig.word_max_lenth)) for word in line['question']['char']]
-        passage_word = [passage['text'] for index, passage in line['passages'].items()]
-        passage_char = [pad(passage['char'], DefaultConfig.word_max_lenth) for index, passage in line['passages'].items()]
+        passage_word = [passage['text'] for index, passage in line['passages']]
+        passage_char = [[list(pad(word, DefaultConfig.word_max_lenth)) for word in passage['char']] for index, passage in line['passages']]
         start = line['golden_span']['start']
         end = line['golden_span']['end']
-        return question_word, question_char, passage_word, passage_char, start, end
+        passage_index = line['golden_span']['passage_index']
+        return [question_word]*11, passage_word, [question_char]*11, passage_char, start, end, passage_index
 
 def bucket_collect_func(batch):
-    question_word, question_char, passage_word, passage_char, start, end = zip(*batch)
-    ipdb.set_trace()
+    question_word, passage_word, question_char, passage_char, start, end, passage_index = zip(*batch)
+    question_word = list(itertools.chain(*question_word))
+    passage_word = list(itertools.chain(*passage_word))
+    question_char = list(itertools.chain(*question_char))
+    passage_char = list(itertools.chain(*passage_char))
+    pad_char = [0] * DefaultConfig.word_max_lenth
+    question_word = np.asarray(list(itertools.zip_longest(*question_word, fillvalue=0))).transpose()
+    passage_word = np.asarray(list(itertools.zip_longest(*passage_word, fillvalue=0))).transpose()
+    question_char = np.asarray(list(itertools.zip_longest(*question_char, fillvalue=pad_char))).transpose((1, 0, 2))
+    passage_char = np.asarray(list(itertools.zip_longest(*passage_char, fillvalue=pad_char))).transpose((1, 0, 2))
+    pad_lenth = passage_word.shape[1]
+    try:
+        start = np.array(start) + np.array(passage_index) * pad_lenth
+        end = np.array(end) + np.array(passage_index) * pad_lenth
+    except:
+        ipdb.set_trace()
+    return question_word, passage_word, question_char, passage_char, start, end, np.asarray(passage_index)
 
 
-dataset = MSDataSet('dev')
-dataloader = DataLoader(dataset, 4, True, collate_fn=bucket_collect_func)
-for i in dataloader:
-    print(i)
 
-#
-# def own_collate_fn(batch):
-#
-#     #pad batch
-#     qwids = list(itertools.zip_longest(*qwids, fillvalue=pidx))
-#     qwids = np.asarray(qwids).transpose().tolist()
-#     cwids = list(itertools.zip_longest(*cwids, fillvalue=pidx))
-#     cwids = np.asarray(cwids).transpose().tolist()
-#     return t.LongTensor(qwids), t.LongTensor(cwids), t.LongTensor(baidx), t.LongTensor(eaidx)
-#
-#
-#
-#
-# import ipdb
-# import torch as t
-# import numpy as np
-# from torch.utils.data import Dataset, DataLoader
-# class TestSet(Dataset):
-#
-#     def __init__(self, set):
-#         super(TestSet, self).__init__()
-#         self.datas = [[1,2],[1,2,3], [1,2,3,4],[1,2,3,4,5]]
-#
-#     def __len__(self):
-#         return 100
-#
-#     def __getitem__(self, item):
-#         return [2, 34, 5], [[1,2,3],[2,3,4],[3,4,5]]
-#
-#
-# def collect_fun(batch):
-#     a, b = zip(*batch)
-#     print('-')
-#     print(a)
-#     print('--')
-#     print(b)
-#     print('-------')
-#     batch = batch
-#
-# dataset = TestSet('dev')
-#
-# dataloader = DataLoader(dataset, 2, True, collate_fn=collect_fun)
-# for i in dataloader:
-#     print(i)
+
+if __name__ == '__main__':
+    dataset = MSDataSet('dev')
+    dataloader = DataLoader(dataset, 32, True, collate_fn=bucket_collect_func, num_workers=20)
+    for i in tqdm(dataloader):
+        ipdb.set_trace()
