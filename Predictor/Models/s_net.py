@@ -43,7 +43,7 @@ class SNet(t.nn.Module):
         self.passage_word_encoder = CustomRnn(self.model_embedding_dim, hidden_size)
         self.passage_char_encoder = CharEncodeLayer(self.char_embedding_dim, DefaultConfig.word_max_lenth)
 
-        self.query_pooling = Q
+        self.query_pooling = AttentionPooling(self.model_embedding_dim, hidden_size, dropout)
 
         self.dot_attention = MultiHeadDotAttention(self.model_embedding_dim, hidden_size, hidden_size, dropout, num_head)
         self.self_attention = MultiHeadSelfAttention(hidden_size, hidden_size, hidden_size, dropout, num_head)
@@ -52,13 +52,9 @@ class SNet(t.nn.Module):
         self.distribution_decoder = None
         self.passage_classifier = None
 
-
-
-
     def forward(self, question_word, question_char, passage_word, passage_char):
 
         ipdb.set_trace()
-        fake_batch_size, passage_lenth = passage_word.size()
         q_mask = get_input_mask(question_word)
         p_mask = get_input_mask(passage_word)
 
@@ -82,6 +78,7 @@ class SNet(t.nn.Module):
         net = self.self_attention(query=net, key=net, value=net, attention_mask=self_attention_mask)
 
         start, end = self.span_decoder(net, q_pooled, passage_mask=p_mask)
+
 
 
 
