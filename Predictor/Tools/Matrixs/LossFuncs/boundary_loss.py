@@ -1,8 +1,9 @@
 import torch as t
+import ipdb
+import torch.nn.functional as F
 
 
-
-def boundary_loss_func(pre_start_logits, pre_end_logits, tru_start_logits, tru_end_logits):
+def boundary_loss_func(pre_start_logits, pre_end_logits, tru_start, tru_end):
     """
 
     :param pre_start_logits: B, L ------need to be log_softmax()
@@ -11,8 +12,9 @@ def boundary_loss_func(pre_start_logits, pre_end_logits, tru_start_logits, tru_e
     :param tru_end_logits: B
     :return:
     """
-
-    start_loss = t.nn.functional.nll_loss(pre_start_logits, tru_start_logits)
-    end_loss = t.nn.functional.nll_loss(pre_end_logits, tru_end_logits)
+    start_loss = F.nll_loss(pre_start_logits, tru_start)
+    end_loss = F.nll_loss(pre_end_logits, tru_end)
     loss = (start_loss + end_loss) / 2.0
     return loss
+
+

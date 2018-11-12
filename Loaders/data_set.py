@@ -52,7 +52,8 @@ def bucket_collect_func(batch):
         end = np.array(end) + np.array(passage_index) * pad_lenth
     except:
         ipdb.set_trace()
-    return question_word, passage_word, question_char, passage_char, start, end, np.asarray(passage_index)
+    return t.LongTensor(question_word), t.LongTensor(passage_word), t.LongTensor(question_char),\
+           t.LongTensor(passage_char), t.LongTensor(start), t.LongTensor(end), t.LongTensor(np.asarray(passage_index))
 
 
 

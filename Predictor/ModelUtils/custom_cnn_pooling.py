@@ -17,7 +17,7 @@ class CustomCnnPooling(t.nn.Module):
     def forward(self, inputs):
         """
         :param inputs: B, L, D
-        :return: B, L, D
+        :return: B, D
         """
         net = self.cnn(inputs.transpose_(-2, -1))
         net = self.act(net)

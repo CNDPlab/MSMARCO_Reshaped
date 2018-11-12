@@ -1,7 +1,6 @@
 import torch as t
 
 
-
 class CustomRnn(t.nn.Module):
     def __init__(self, input_dim, hidden_size, bidirectional=True, type='GRU'):
         super(CustomRnn, self).__init__()

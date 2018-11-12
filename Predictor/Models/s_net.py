@@ -25,36 +25,42 @@ class SNet(t.nn.Module):
     def __init__(self, hidden_size, dropout, num_head, word_matrix=None, char_matrix=None, passage_num=11):
         super(SNet, self).__init__()
         self.passage_num = passage_num
+        self.hidden_size = hidden_size
         if word_matrix is None and char_matrix is None:
             self.char_embedding_dim = 14
             self.word_embedding_dim = 300
             self.word_embedding = t.nn.Embedding(310000, self.word_embedding_dim)
             self.char_embedding = t.nn.Embedding(500, self.char_embedding_dim)
-            self.model_embedding_dim = self.char_embedding_dim + self.word_embedding_dim
         else:
             self.word_embedding_dim = word_matrix.shape[1]
             self.char_embedding_dim = char_matrix.shape[1]
             self.word_embedding = t.nn.Embedding(word_matrix.shape[0], self.word_embedding_dim)
             self.char_embedding = t.nn.Embedding(char_matrix.shape[0], self.char_embedding_dim)
-            self.model_embedding_dim = self.word_embedding_dim + self.char_embedding_dim
+            self.word_embedding.weight.data = word_matrix
+            self.word_embedding.weight.requires_grad = False
 
+
+        self.model_embedding_dim = self.word_embedding_dim + self.char_embedding_dim
         self.question_word_encoder = CustomRnn(self.model_embedding_dim, hidden_size)
         self.question_char_encoder = CharEncodeLayer(self.char_embedding_dim, DefaultConfig.word_max_lenth)
         self.passage_word_encoder = CustomRnn(self.model_embedding_dim, hidden_size)
         self.passage_char_encoder = CharEncodeLayer(self.char_embedding_dim, DefaultConfig.word_max_lenth)
 
-        self.query_pooling = AttentionPooling(self.model_embedding_dim, hidden_size, dropout)
+        # self.query_pooling = AttentionPooling(self.model_embedding_dim, hidden_size, dropout)
 
         self.dot_attention = MultiHeadDotAttention(self.model_embedding_dim, hidden_size, hidden_size, dropout, num_head)
         self.self_attention = MultiHeadSelfAttention(hidden_size, hidden_size, hidden_size, dropout, num_head)
 
-        self.span_decoder = PointerNetDecoder(input_size=hidden_size, hidden_size=hidden_size)
+        self.span_decoder = PointerNetDecoder(input_size=self.model_embedding_dim, hidden_size=hidden_size, dropout=dropout)
         self.distribution_decoder = None
         self.passage_classifier = None
 
     def forward(self, question_word, question_char, passage_word, passage_char):
 
-        ipdb.set_trace()
+        fake_batch_size, q_lenth = question_word.size()
+        _, p_lenth = passage_word.size()
+        batch_size = int(fake_batch_size / self.passage_num)
+
         q_mask = get_input_mask(question_word)
         p_mask = get_input_mask(passage_word)
 
@@ -71,15 +77,30 @@ class SNet(t.nn.Module):
         q_all = t.cat([q_w, q_c], dim=-1)
         p_c = self.passage_char_encoder(p_c)
         p_all = t.cat([p_w, p_c], dim=-1)
+        #q_pooled = self.query_pooling(q_all, q_mask)
 
-        q_pooled = self.query_pooling(q_all, q_mask)
+        net, _ = self.dot_attention(query=q_all, key=p_all, value=p_all, attention_mask=dot_attention_mask)
+        net, _ = self.self_attention(query=net, key=net, value=net, attention_mask=self_attention_mask)
 
-        net = self.dot_attention(query=q_all, key=p_all, value=p_all, attention_mask=dot_attention_mask)
-        net = self.self_attention(query=net, key=net, value=net, attention_mask=self_attention_mask)
+        query_info = q_all.view(batch_size, self.passage_num, q_lenth, self.model_embedding_dim)
+        query_mask = q_mask.view(batch_size, self.passage_num, q_lenth)
+        query_info = query_info[:, 0, :]
+        query_mask = query_mask[:, 0]
 
-        start, end = self.span_decoder(net, q_pooled, passage_mask=p_mask)
+        passage_info = net.view(batch_size, self.passage_num, p_lenth, self.hidden_size)
+        passage_info = passage_info.view(batch_size, self.passage_num * p_lenth, self.hidden_size)
+        passage_mask = p_mask.view(batch_size, self.passage_num, p_lenth)
+        passage_mask = passage_mask.view(batch_size, self.passage_num * p_lenth)
 
 
+
+        start, end = self.span_decoder(passage=passage_info, query=query_info, passage_mask=passage_mask, query_mask=query_mask)
+        start = start.masked_fill((1-passage_mask).byte(), -1e30)
+        start = t.nn.functional.log_softmax(start, -1)
+
+        end = end.masked_fill((1-passage_mask).byte(), -1e30)
+        end = t.nn.functional.log_softmax(end, -1)
+        return start, end
 
 
 
@@ -90,6 +111,9 @@ if __name__ == '__main__':
     from Loaders import get_dataloader
     dataloader = get_dataloader('dev', 4, 4)
     for i in dataloader:
-        question_word, passage_word, question_char, passage_char, start, end, passage_index = [t.from_numpy(j) for j in i]
+        question_word, passage_word, question_char, passage_char, start, end, passage_index = [j for j in i]
         model = SNet(hidden_size=64, dropout=0.1, num_head=4)
-        model(question_word, question_char, passage_word, passage_char)
+        start, end = model(question_word, question_char, passage_word, passage_char)
+        loss = (start + end).sum()
+        loss.backward()
+        ipdb.set_trace()
