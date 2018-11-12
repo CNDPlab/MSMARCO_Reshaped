@@ -12,7 +12,7 @@ class CustomCnnPooling(t.nn.Module):
         if relu:
             self.act.add_module('relu', t.nn.ReLU())
         self.max_pooling = t.nn.MaxPool1d(sequence_lenth - 2 * (padding + 1))
-
+        t.nn.init.xavier_normal_(self.cnn.weight)
 
     def forward(self, inputs):
         """

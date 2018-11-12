@@ -34,10 +34,10 @@ class SNet(t.nn.Module):
         else:
             self.word_embedding_dim = word_matrix.shape[1]
             self.char_embedding_dim = char_matrix.shape[1]
-            self.word_embedding = t.nn.Embedding(word_matrix.shape[0], self.word_embedding_dim)
-            self.char_embedding = t.nn.Embedding(char_matrix.shape[0], self.char_embedding_dim)
+            self.word_embedding = t.nn.Embedding(word_matrix.shape[0], self.word_embedding_dim, padding_idx=0)
+            self.char_embedding = t.nn.Embedding(char_matrix.shape[0], self.char_embedding_dim, padding_idx=0)
             self.word_embedding.weight.data = word_matrix
-            self.word_embedding.weight.requires_grad = False
+            #self.word_embedding.weight.requires_grad = False
 
 
         self.model_embedding_dim = self.word_embedding_dim + self.char_embedding_dim
@@ -95,10 +95,10 @@ class SNet(t.nn.Module):
 
 
         start, end = self.span_decoder(passage=passage_info, query=query_info, passage_mask=passage_mask, query_mask=query_mask)
-        start = start.masked_fill((1-passage_mask).byte(), -1e30)
+        #start = start.masked_fill((1-passage_mask).byte(), -1e30)
         start = t.nn.functional.log_softmax(start, -1)
 
-        end = end.masked_fill((1-passage_mask).byte(), -1e30)
+        #end = end.masked_fill((1-passage_mask).byte(), -1e30)
         end = t.nn.functional.log_softmax(end, -1)
         return start, end
 

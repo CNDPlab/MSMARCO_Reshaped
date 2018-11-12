@@ -9,6 +9,9 @@ class CustomRnn(t.nn.Module):
         self.rnn = getattr(t.nn, 'RNN')(input_dim, hidden_size, bidirectional=bidirectional, batch_first=True)
         if self.bidirectional:
             self.projection = t.nn.Linear(hidden_size * 2, hidden_size)
+        t.nn.init.xavier_normal_(self.projection.weight)
+        t.nn.init.orthogonal_(self.rnn.weight_hh_l0)
+        t.nn.init.orthogonal_(self.rnn.weight_ih_l0)
 
     def forward(self, inputs):
         net, _ = self.rnn(inputs)
@@ -22,3 +25,4 @@ if __name__ == '__main__':
     rnn = CustomRnn(128, 64)
     cc = rnn(inputs)
     print(cc.shape)
+
