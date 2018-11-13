@@ -22,13 +22,13 @@ class PointerNetDecoder(t.nn.Module):
         :return:
         """
         q_pooled = self.start_attention_pooling(query, query_mask)
-        net = t.bmm(passage, q_pooled.unsqueeze(-1)).squeeze(-1) / self.C
+        net = t.bmm(passage, q_pooled.unsqueeze(-1)).squeeze(-1)
         start_logits = net
         start = F.softmax(net, -1)
         start_info = start.unsqueeze(-1) * passage
         start_info = self.end_attention_pooling(start_info, passage_mask)
         end_side_info = self.rnn_cell(start_info, q_pooled)
-        net = t.bmm(passage, end_side_info.unsqueeze(-1)).squeeze(-1) / self.C
+        net = t.bmm(passage, end_side_info.unsqueeze(-1)).squeeze(-1)
         end_logits = net
 
         return start_logits, end_logits

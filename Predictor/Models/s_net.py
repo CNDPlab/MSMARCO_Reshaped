@@ -1,6 +1,5 @@
 import torch as t
-from Predictor.ModelUtils import MultiHeadDotAttention, MultiHeadSelfAttention, CharEncodeLayer, CustomRnn, \
-    PointerNetDecoder, AttentionPooling
+from Predictor.ModelUtils import MultiHeadDotAttention, MultiHeadSelfAttention, CharEncodeLayer, CustomRnn, PointerNetDecoder
 import ipdb
 from configs import DefaultConfig
 import torch.nn.functional as F
@@ -34,19 +33,16 @@ class SNet(t.nn.Module):
         else:
             self.word_embedding_dim = word_matrix.shape[1]
             self.char_embedding_dim = char_matrix.shape[1]
-            self.word_embedding = t.nn.Embedding(word_matrix.shape[0], self.word_embedding_dim, padding_idx=0)
+            self.word_embedding = t.nn.Embedding(word_matrix.shape[0], self.word_embedding_dim, padding_idx=0,
+                                                 _weight=word_matrix)
             self.char_embedding = t.nn.Embedding(char_matrix.shape[0], self.char_embedding_dim, padding_idx=0)
-            self.word_embedding.weight.data = word_matrix
-            #self.word_embedding.weight.requires_grad = False
+            self.word_embedding.weight.requires_grad = False
 
-
-        self.model_embedding_dim = self.word_embedding_dim + self.char_embedding_dim
+        self.model_embedding_dim = self.word_embedding_dim + self.char_embedding_dim * 3
         self.question_word_encoder = CustomRnn(self.model_embedding_dim, hidden_size)
         self.question_char_encoder = CharEncodeLayer(self.char_embedding_dim, DefaultConfig.word_max_lenth)
         self.passage_word_encoder = CustomRnn(self.model_embedding_dim, hidden_size)
         self.passage_char_encoder = CharEncodeLayer(self.char_embedding_dim, DefaultConfig.word_max_lenth)
-
-        # self.query_pooling = AttentionPooling(self.model_embedding_dim, hidden_size, dropout)
 
         self.dot_attention = MultiHeadDotAttention(self.model_embedding_dim, hidden_size, hidden_size, dropout, num_head)
         self.self_attention = MultiHeadSelfAttention(hidden_size, hidden_size, hidden_size, dropout, num_head)
@@ -56,7 +52,6 @@ class SNet(t.nn.Module):
         self.passage_classifier = None
 
     def forward(self, question_word, question_char, passage_word, passage_char):
-
         fake_batch_size, q_lenth = question_word.size()
         _, p_lenth = passage_word.size()
         batch_size = int(fake_batch_size / self.passage_num)
@@ -64,11 +59,17 @@ class SNet(t.nn.Module):
         q_mask = get_input_mask(question_word)
         p_mask = get_input_mask(passage_word)
 
+        q_lenth = q_mask.sum(-1)
+        p_lenth = p_mask.sum(-1)
+
         dot_attention_mask = get_da_mask(q_mask, p_mask)
         self_attention_mask = get_sa_mask(p_mask)
 
         q_w = self.word_embedding(question_word)
         p_w = self.word_embedding(passage_word)
+
+        q_w = self.question_word_encoder(q_w, q_lenth)
+        p_w = self.passage_word_encoder(p_w, p_lenth)
 
         q_c = self.char_embedding(question_char)
         p_c = self.char_embedding(passage_char)
@@ -77,7 +78,6 @@ class SNet(t.nn.Module):
         q_all = t.cat([q_w, q_c], dim=-1)
         p_c = self.passage_char_encoder(p_c)
         p_all = t.cat([p_w, p_c], dim=-1)
-        #q_pooled = self.query_pooling(q_all, q_mask)
 
         net, _ = self.dot_attention(query=q_all, key=p_all, value=p_all, attention_mask=dot_attention_mask)
         net, _ = self.self_attention(query=net, key=net, value=net, attention_mask=self_attention_mask)
@@ -92,13 +92,11 @@ class SNet(t.nn.Module):
         passage_mask = p_mask.view(batch_size, self.passage_num, p_lenth)
         passage_mask = passage_mask.view(batch_size, self.passage_num * p_lenth)
 
-
-
         start, end = self.span_decoder(passage=passage_info, query=query_info, passage_mask=passage_mask, query_mask=query_mask)
-        #start = start.masked_fill((1-passage_mask).byte(), -1e30)
+        start = start.masked_fill((1-passage_mask).byte(), -1e30)
         start = t.nn.functional.log_softmax(start, -1)
 
-        #end = end.masked_fill((1-passage_mask).byte(), -1e30)
+        end = end.masked_fill((1-passage_mask).byte(), -1e30)
         end = t.nn.functional.log_softmax(end, -1)
         return start, end
 

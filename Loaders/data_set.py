@@ -11,14 +11,15 @@ from tqdm import tqdm
 from Predictor.Tools.DataTools.pad import pad
 
 
-
-
 class MSDataSet(Dataset):
     def __init__(self, set):
         super(MSDataSet, self).__init__()
         self.file = os.path.join(DefaultConfig.processed_folder, set + '.json')
         with open(self.file) as reader:
-            self.data = reader.readlines()
+            if set == 'dev':
+                self.data = reader.readlines()[:1024]
+            else:
+                self.data = reader.readlines()
 
     def __len__(self):
         return len(self.data)

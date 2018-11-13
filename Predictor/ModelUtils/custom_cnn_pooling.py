@@ -1,29 +1,24 @@
 import torch as t
+import torch.nn.functional as F
 
 
 class CustomCnnPooling(t.nn.Module):
-    def __init__(self, input_dim, hidden_size, sequence_lenth, kernel_size=3, stride=1, padding=0, norm=True, relu=True):
+    def __init__(self, input_dim, hidden_size, sequence_lenth):
         super(CustomCnnPooling, self).__init__()
         self.sequence_lenth = sequence_lenth
-        self.cnn = t.nn.Conv1d(in_channels=input_dim, out_channels=hidden_size, stride=stride, padding=padding, kernel_size=kernel_size)
-        self.act = t.nn.Sequential()
-        if norm:
-            self.act.add_module('norm', t.nn.BatchNorm1d(hidden_size))
-        if relu:
-            self.act.add_module('relu', t.nn.ReLU())
-        self.max_pooling = t.nn.MaxPool1d(sequence_lenth - 2 * (padding + 1))
-        t.nn.init.xavier_normal_(self.cnn.weight)
+        self.cnns = t.nn.ModuleList([t.nn.Conv1d(input_dim, hidden_size, i) for i in range(3, 6)])
 
     def forward(self, inputs):
         """
         :param inputs: B, L, D
         :return: B, D
         """
-        net = self.cnn(inputs.transpose_(-2, -1))
-        net = self.act(net)
-        net = self.max_pooling(net).transpose_(-2, -1).squeeze(-2)
+        net = inputs.transpose(-2, -1)
+        net = t.cat(
+            [F.relu(cnn(net)).max(dim=2)[0] for cnn in self.cnns],
+            dim=1
+        )
         return net
-
 
 
 if __name__ == '__main__':

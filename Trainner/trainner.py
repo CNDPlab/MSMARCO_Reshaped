@@ -75,21 +75,24 @@ class Trainner(BaseTrainner):
     def eval_inference(self, data):
         pre_answer_list = []
         tar_answer_list = []
-        query, passage, start, end = [i.cuda() for i in data]
-        pre_start, pre_end = self.model(query, passage)
+        question_word, passage_word, question_char, passage_char, start, end, passage_index = [j.cuda() for j in data]
+        fake_batch_size, passage_lenth = question_word.size()
+        batch_size = int(fake_batch_size / self.model.passage_num)
+        passage_num = self.model.passage_num
+        pre_start, pre_end = self.model(question_word, question_char, passage_word, passage_char)
+
         loss = self.loss_func(pre_start, pre_end, start, end)
         start_pos = t.argmax(pre_start, -1)
         end_pos = t.argmax(pre_end, -1)
-        for i in zip(start_pos, end_pos, passage):
+        ipdb.set_trace()
+        for i in zip(start_pos, end_pos, passage_word.view(batch_size, passage_num, passage_lenth).view(batch_size, passage_num * passage_lenth)):
             if i[0] < i[1]:
                 answer = i[2][i[0]:i[1]+1].tolist()
             else:
                 answer = i[2][i[1]:i[0] + 1].tolist()
             pre_answer_list.append(answer)
-        for i in zip(start, end, passage):
+        for i in zip(start, end, passage_word.view(batch_size, passage_num, passage_lenth).view(batch_size, passage_num * passage_lenth)):
             answer = i[2][i[0]:i[1]+1].tolist()
             tar_answer_list.append(answer)
-
         score = self.score_func(pre_answer_list, tar_answer_list)
         return loss, score
-

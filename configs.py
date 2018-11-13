@@ -1,3 +1,6 @@
+import warnings
+
+
 class DefaultConfig:
     raw_folder = 'Datas/Raw/'
     middle_folder = 'Datas/Middle/'
@@ -15,12 +18,12 @@ class DefaultConfig:
     char_embedding_dim = 12
     word_embedding_dim = 300
     batch_size = 32
-    hidden_size = 64
+    hidden_size = 128
     dropout = 0.1
     num_head = 4
 
     warm_up_step = 4000
-    eval_every_step = 4000
+    eval_every_step = 100
     save_every_step = 12000
     def parse(self, kwargs):
         for k, v in kwargs.items():
