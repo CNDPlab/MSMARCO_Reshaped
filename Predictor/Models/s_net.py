@@ -38,10 +38,10 @@ class SNet(t.nn.Module):
             self.char_embedding = t.nn.Embedding(char_matrix.shape[0], self.char_embedding_dim, padding_idx=0)
             self.word_embedding.weight.requires_grad = False
 
-        self.model_embedding_dim = self.word_embedding_dim + self.char_embedding_dim * 3
-        self.question_word_encoder = CustomRnn(self.model_embedding_dim, hidden_size)
+        self.model_embedding_dim = self.hidden_size * 2 + self.char_embedding_dim * 3
+        self.question_word_encoder = CustomRnn(self.word_embedding_dim, hidden_size, dropout, num_layers=2)
         self.question_char_encoder = CharEncodeLayer(self.char_embedding_dim, DefaultConfig.word_max_lenth)
-        self.passage_word_encoder = CustomRnn(self.model_embedding_dim, hidden_size)
+        self.passage_word_encoder = CustomRnn(self.word_embedding_dim, hidden_size, dropout, num_layers=2)
         self.passage_char_encoder = CharEncodeLayer(self.char_embedding_dim, DefaultConfig.word_max_lenth)
 
         self.dot_attention = MultiHeadDotAttention(self.model_embedding_dim, hidden_size, hidden_size, dropout, num_head)
@@ -58,18 +58,19 @@ class SNet(t.nn.Module):
 
         q_mask = get_input_mask(question_word)
         p_mask = get_input_mask(passage_word)
+        q_lens = q_mask.sum(-1)
+        p_lens = p_mask.sum(-1)
+        q_lens.masked_fill_(q_lens.eq(0), 1.0)
+        p_lens.masked_fill_(p_lens.eq(0), 1.0)
 
-        q_lenth = q_mask.sum(-1)
-        p_lenth = p_mask.sum(-1)
 
         dot_attention_mask = get_da_mask(q_mask, p_mask)
         self_attention_mask = get_sa_mask(p_mask)
-
         q_w = self.word_embedding(question_word)
         p_w = self.word_embedding(passage_word)
 
-        q_w = self.question_word_encoder(q_w, q_lenth)
-        p_w = self.passage_word_encoder(p_w, p_lenth)
+        q_w, _ = self.question_word_encoder(q_w, q_lens)
+        p_w, _ = self.passage_word_encoder(p_w, p_lens)
 
         q_c = self.char_embedding(question_char)
         p_c = self.char_embedding(passage_char)
@@ -106,9 +107,10 @@ class SNet(t.nn.Module):
 
 if __name__ == '__main__':
 
+    from tqdm import tqdm
     from Loaders import get_dataloader
     dataloader = get_dataloader('dev', 4, 4)
-    for i in dataloader:
+    for i in tqdm(dataloader):
         question_word, passage_word, question_char, passage_char, start, end, passage_index = [j for j in i]
         model = SNet(hidden_size=64, dropout=0.1, num_head=4)
         start, end = model(question_word, question_char, passage_word, passage_char)

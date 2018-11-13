@@ -25,6 +25,7 @@ class DefaultConfig:
     warm_up_step = 4000
     eval_every_step = 100
     save_every_step = 12000
+
     def parse(self, kwargs):
         for k, v in kwargs.items():
             if not hasattr(self, k):

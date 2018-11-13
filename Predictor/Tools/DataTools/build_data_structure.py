@@ -31,6 +31,8 @@ def build_data_structure(instance):
         processed_structure['answers'][0]['text'] = 'No Answer Present.'
     else:
         processed_structure['have_answer'] = True
+        processed_structure['passages'][10]['text'] = 'No Answer Present.'
+        processed_structure['passages'][10]['is_selected'] = False
         for index, answer in enumerate(instance['answers']):
             processed_structure['answers'][index]['text'] = answer
 
@@ -49,6 +51,7 @@ def build_data_structure(instance):
             else:
                 processed_structure['passages'][index]['text'] = passage['passage_text'].replace("''", '" ').replace("``", '" ')
                 processed_structure['passages'][index]['is_selected'] = passage['is_selected']
+
     processed_structure['passages'] = sorted(processed_structure['passages'].items(), key=lambda x: int(x[0]))
 
     return processed_structure
