@@ -59,8 +59,8 @@ class SNet(t.nn.Module):
 
         q_mask = get_input_mask(question_word)
         p_mask = get_input_mask(passage_word)
-        q_lens = q_mask.sum(-1)
-        p_lens = p_mask.sum(-1)
+        #q_lens = q_mask.sum(-1)
+        #p_lens = p_mask.sum(-1)
 
         dot_attention_mask = get_da_mask(q_mask, p_mask)
         self_attention_mask = get_sa_mask(p_mask)

@@ -1,4 +1,3 @@
-from .ema import ExponentialMovingAverage
 from .attention import *
 from .custom_cnn_pooling import *
 from .custom_rnn import *
