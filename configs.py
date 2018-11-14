@@ -23,7 +23,7 @@ class DefaultConfig:
     num_head = 4
 
     warm_up_step = 4000
-    eval_every_step = 100
+    eval_every_step = 2000
     save_every_step = 12000
 
     def parse(self, kwargs):

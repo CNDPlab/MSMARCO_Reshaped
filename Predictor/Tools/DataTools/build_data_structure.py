@@ -40,11 +40,11 @@ def build_data_structure(instance):
 
     for index, passage in enumerate(instance['passages']):
         if index < 10:
-            if instance['answers'] == ['Yes'] and instance['query'].split(' ')[0] in YesNoHead:
+            if instance['answers'] == ['Yes'] and instance['query'].split(' ')[0] in YesNoHead and passage['is_selected']:
                 processed_structure['passages'][index]['text'] = 'Yes. '+passage['passage_text'].replace("''", '" ').replace("``", '" ')
                 processed_structure['passages'][index]['is_selected'] = passage['is_selected']
                 processed_structure['yes_no'] = True
-            elif instance['answers'] == ['No'] and instance['query'].split(' ')[0] in YesNoHead:
+            elif instance['answers'] == ['No'] and instance['query'].split(' ')[0] in YesNoHead and passage['is_selected']:
                 processed_structure['passages'][index]['text'] = 'No. '+passage['passage_text'].replace("''", '" ').replace("``", '" ')
                 processed_structure['passages'][index]['is_selected'] = passage['is_selected']
                 processed_structure['yes_no'] = True

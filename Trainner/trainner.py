@@ -34,6 +34,8 @@ class Trainner(BaseTrainner):
 
             if self.global_step % self.args.eval_every_step == 0:
                 eval_score, eval_loss = self.evaluation()
+
+
                 if self.global_step % self.args.save_every_step == 0:
                     self.save(eval_score, eval_loss)
 
