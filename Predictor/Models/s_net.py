@@ -67,11 +67,10 @@ class SNet(t.nn.Module):
         q_w = self.word_embedding(question_word)
         p_w = self.word_embedding(passage_word)
 
+        # q_w, _ = self.question_word_encoder(q_w, q_lens)
+        # p_w, _ = self.passage_word_encoder(p_w, p_lens)
         q_w, _ = self.question_word_encoder(q_w)
-        q_w = q_w * q_mask.unsqueeze(-1)
         p_w, _ = self.passage_word_encoder(p_w)
-        p_w = p_w * p_mask.unsqueeze(-1)
-
         q_c = self.char_embedding(question_char)
         p_c = self.char_embedding(passage_char)
 
@@ -83,11 +82,10 @@ class SNet(t.nn.Module):
 
         net, _ = self.dot_attention(query=q_all, key=p_all, value=p_all, attention_mask=dot_attention_mask)
         net, _ = self.self_attention(query=net, key=net, value=net, attention_mask=self_attention_mask)
-
         query_info = q_all.view(batch_size, self.passage_num, q_lenth, self.model_embedding_dim)
         query_mask = q_mask.view(batch_size, self.passage_num, q_lenth)
-        query_info = query_info[:, 0, :]
-        query_mask = query_mask[:, 0]
+        query_info = query_info[:, 0, :, :]
+        query_mask = query_mask[:, 0, :]
 
         passage_info = net.view(batch_size, self.passage_num, p_lenth, self.hidden_size)
         passage_info = passage_info.view(batch_size, self.passage_num * p_lenth, self.hidden_size)
@@ -95,11 +93,11 @@ class SNet(t.nn.Module):
         passage_mask = passage_mask.view(batch_size, self.passage_num * p_lenth)
 
         start_logits, end_logits, start_point, end_point = self.span_decoder(passage=passage_info, query=query_info, passage_mask=passage_mask, query_mask=query_mask)
-        #start = start.masked_fill((1-passage_mask).byte(), -1e20)
-        start = t.nn.functional.log_softmax(start_logits, -1)
+        start = start_logits.masked_fill((1-passage_mask).byte(), -1e20)
+        start = t.nn.functional.log_softmax(start, -1)
 
-        #end = end.masked_fill((1-passage_mask).byte(), -1e20)
-        end = t.nn.functional.log_softmax(end_logits, -1)
+        end = end_logits.masked_fill((1-passage_mask).byte(), -1e20)
+        end = t.nn.functional.log_softmax(end, -1)
         return start, end
 
 
@@ -110,11 +108,21 @@ if __name__ == '__main__':
 
     from tqdm import tqdm
     from Loaders import get_dataloader
-    dataloader = get_dataloader('dev', 4, 4)
-    for i in tqdm(dataloader):
-        question_word, passage_word, question_char, passage_char, start, end, passage_index = [j for j in i]
+    from Predictor.Tools.Matrixs.LossFuncs import boundary_loss_func
+    dataloader = get_dataloader('dev', 24, 1)
+    for batch in tqdm(dataloader):
+        question_word, passage_word, question_char, passage_char, start, end, passage_index = [j for j in batch]
         model = SNet(hidden_size=64, dropout=0.1, num_head=4)
-        start, end = model(question_word, question_char, passage_word, passage_char)
-        loss = (start + end).sum()
-        loss.backward()
+        start_logits, end_logits = model(question_word, question_char, passage_word, passage_char)
+        for i in zip(start_logits, end_logits, start, end):
+            try:
+                loss = boundary_loss_func(i[0].unsqueeze(0),i[1].unsqueeze(0),i[2].unsqueeze(0),i[3].unsqueeze(0))
+                print(loss)
+            except:
+                ipdb.set_trace()
+
+        loss = boundary_loss_func(start_logits, end_logits, start, end)
+        print(loss)
         ipdb.set_trace()
+
+

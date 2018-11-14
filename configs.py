@@ -20,7 +20,7 @@ class DefaultConfig:
     batch_size = 32
     hidden_size = 128
     dropout = 0.1
-    num_head = 4
+    num_head = 2
 
     warm_up_step = 4000
     eval_every_step = 2000

@@ -44,7 +44,7 @@ def extract_golden_span(instance):
                         pos = ' '.join(passage['text']).find(' '.join(answer['text']))
                         if pos != -1:
                             instance['golden_span']['start'] = bisect.bisect(np.cumsum([1 + len(t) for t in passage['text']]), pos)
-                            instance['golden_span']['end'] = instance['golden_span']['start'] + len(answer['text'])
+                            instance['golden_span']['end'] = instance['golden_span']['start'] + len(answer['text']) - 1
                             instance['golden_span']['passage_index'] = passage_index
                             instance['golden_span']['score'] = 1
                             instance['golden_span']['answer_index'] = answer_index

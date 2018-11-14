@@ -31,7 +31,7 @@ class MSDataSet(Dataset):
             if set == 'dev':
                 self.data = reader.readlines()[:10240]
             else:
-                self.data = reader.readlines()[:32]
+                self.data = reader.readlines()
 
     def __len__(self):
         return len(self.data)
@@ -67,7 +67,7 @@ def bucket_collect_func(batch):
     except:
         ipdb.set_trace()
     return t.LongTensor(question_word), t.LongTensor(passage_word), t.LongTensor(question_char),\
-           t.LongTensor(passage_char), t.LongTensor(start), t.LongTensor(end), t.LongTensor(np.asarray(passage_index))
+           t.LongTensor(passage_char), t.LongTensor(start), t.LongTensor(end) - 1, t.LongTensor(np.asarray(passage_index))
 
 
 
