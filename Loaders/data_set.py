@@ -15,9 +15,21 @@ class MSDataSet(Dataset):
     def __init__(self, set):
         super(MSDataSet, self).__init__()
         self.file = os.path.join(DefaultConfig.processed_folder, set + '.json')
+        # with open(self.file) as reader:
+        #     self.data = reader.readlines()
+        # tmp = []
+        # for i in self.data:
+        #     line = json.loads(i)
+        #     if line['have_answer']:
+        #         tmp.append(i)
+        #         if len(tmp) == 32:
+        #             break
+        # self.data = tmp
+
+
         with open(self.file) as reader:
             if set == 'dev':
-                self.data = reader.readlines()[:1024]
+                self.data = reader.readlines()[:10240]
             else:
                 self.data = reader.readlines()
 
@@ -35,6 +47,7 @@ class MSDataSet(Dataset):
         end = line['golden_span']['end']
         passage_index = line['golden_span']['passage_index']
         return [question_word]*11, passage_word, [question_char]*11, passage_char, start, end, passage_index
+
 
 def bucket_collect_func(batch):
     question_word, passage_word, question_char, passage_char, start, end, passage_index = zip(*batch)
@@ -61,6 +74,6 @@ def bucket_collect_func(batch):
 
 if __name__ == '__main__':
     dataset = MSDataSet('dev')
-    dataloader = DataLoader(dataset, 32, True, collate_fn=bucket_collect_func, num_workers=20)
+    dataloader = DataLoader(dataset, 32, True, collate_fn=bucket_collect_func, num_workers=1)
     for i in tqdm(dataloader):
         ipdb.set_trace()

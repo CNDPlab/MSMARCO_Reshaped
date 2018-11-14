@@ -1,6 +1,6 @@
 import torch as t
 import torch.nn.functional as F
-from .query_pooling import AttentionPooling
+from Predictor.ModelUtils import AttentionPooling
 import ipdb
 
 
@@ -35,21 +35,23 @@ class PointerNetDecoder(t.nn.Module):
         :param side_info: B, 1, H
         :return:
         """
+        passage_lenth = passage.size(1)
         start_info = self.start_attention_pooling(query, query_mask)
         # B, H
         net = self.start_attention_linear(F.tanh(self.start_passage_linear(passage) + self.start_info_linear(start_info).unsqueeze(1)))
         # B, L, 1
-        start_logits = net.squeeze(-1)
-        start_point = t.argmax(F.softmax(start_logits, -1), -1)
+        start_logits = F.softmax(net.squeeze(-1), -1)
+        start_point = t.argmax(start_logits, -1)
+        ipdb.set_trace()
 
         answer_recurrent, _ = self.rnn(passage, start_info.repeat(self.rnn.num_layers, 1, 1))
 
         end_info = t.stack([i[0][i[1]] for i in zip(answer_recurrent, start_point)], 0)
         net = self.end_attention_linear(F.tanh(self.end_passage_linear(passage) + self.end_info_linear(end_info).unsqueeze(1)))
-        end_logits = net.squeeze(-1)
-        end_point = t.argmax(F.softmax(end_logits, -1), -1)
+        end_logits = F.softmax(net.squeeze(-1), -1)
+        end_point = t.argmax(end_logits, -1)
 
-        return start_logits, end_logits, start_point, end_point
+        return start_logits, end_logits. start_point, end_point
 
 
 if __name__ == '__main__':

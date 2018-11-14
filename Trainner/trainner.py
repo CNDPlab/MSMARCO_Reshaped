@@ -76,15 +76,18 @@ class Trainner(BaseTrainner):
         pre_answer_list = []
         tar_answer_list = []
         question_word, passage_word, question_char, passage_char, start, end, passage_index = [j.cuda() for j in data]
-        fake_batch_size, passage_lenth = question_word.size()
-        batch_size = int(fake_batch_size / self.model.passage_num)
-        passage_num = self.model.passage_num
+        fake_batch_size, passage_lenth = passage_word.size()
+        if self.use_multi_gpu:
+            passage_num = self.model.module.passage_num
+        else:
+            passage_num = self.model.passage_num
+        batch_size = int(fake_batch_size / passage_num)
+
         pre_start, pre_end = self.model(question_word, question_char, passage_word, passage_char)
 
         loss = self.loss_func(pre_start, pre_end, start, end)
         start_pos = t.argmax(pre_start, -1)
         end_pos = t.argmax(pre_end, -1)
-        ipdb.set_trace()
         for i in zip(start_pos, end_pos, passage_word.view(batch_size, passage_num, passage_lenth).view(batch_size, passage_num * passage_lenth)):
             if i[0] < i[1]:
                 answer = i[2][i[0]:i[1]+1].tolist()

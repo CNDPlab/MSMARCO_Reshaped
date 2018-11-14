@@ -17,7 +17,7 @@ def build_data_structure(instance):
         'question': {'text': '', 'pos': '', 'ner': ''},
         'passages': {
             index: {
-                'is_selected': 0, 'text': '', 'char': '', 'pos': '', 'ner': ''
+                'is_selected': 0, 'text': 'blank passage', 'char': '', 'pos': '', 'ner': ''
             } for index in range(11)
         },
 
@@ -52,6 +52,5 @@ def build_data_structure(instance):
                 processed_structure['passages'][index]['text'] = passage['passage_text'].replace("''", '" ').replace("``", '" ')
                 processed_structure['passages'][index]['is_selected'] = passage['is_selected']
 
-    processed_structure['passages'] = sorted(processed_structure['passages'].items(), key=lambda x: int(x[0]))
 
     return processed_structure

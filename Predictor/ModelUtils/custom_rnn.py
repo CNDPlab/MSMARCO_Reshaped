@@ -91,11 +91,11 @@ class CustomRnn(t.nn.Module):
 
     def forward(self, inputs, lenths=None, init_states=None):
         batch_size = inputs.size(0)
-
-        sort_ind = sorted(range(len(lenths)),
-                          key=lambda i: lenths[i], reverse=True)
-        seq_lens = [lenths[i] for i in sort_ind]
-        emb_sequence = reorder_sequence(inputs, sort_ind, True)
+        if lenths is not None:
+            sort_ind = sorted(range(len(lenths)),
+                              key=lambda i: lenths[i], reverse=True)
+            seq_lens = [lenths[i] for i in sort_ind]
+            emb_sequence = reorder_sequence(inputs, sort_ind, True)
         if init_states is None:
             device = inputs.device
             init_states = init_lstm_states(self.rnn, batch_size, device)
@@ -112,7 +112,7 @@ class CustomRnn(t.nn.Module):
             lstm_out = reorder_sequence(lstm_out, reorder_ind, True)
             final_states = reorder_lstm_states(final_states, reorder_ind)
         else:
-            lstm_out, final_states = self.rnn(emb_sequence, init_states)
+            lstm_out, final_states = self.rnn(inputs, init_states)
         return lstm_out, final_states
 
 

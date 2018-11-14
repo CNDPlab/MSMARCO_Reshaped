@@ -105,8 +105,3 @@ with open(os.path.join(DefaultConfig.processed_folder, 'dev_tmp.json')) as reade
 print(f'{count} droped')
 
 
-#######
-import pickle as pk
-char_vocab = pk.load(DefaultConfig.char_vocab, 'rb')
-char_vocab.random_init(DefaultConfig.char_embedding_dim)
-char_vocab.save(DefaultConfig.char_vocab)

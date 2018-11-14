@@ -47,7 +47,8 @@ class SNet(t.nn.Module):
         self.dot_attention = MultiHeadDotAttention(self.model_embedding_dim, hidden_size, hidden_size, dropout, num_head)
         self.self_attention = MultiHeadSelfAttention(hidden_size, hidden_size, hidden_size, dropout, num_head)
 
-        self.span_decoder = PointerNetDecoder(input_size=self.model_embedding_dim, hidden_size=hidden_size, dropout=dropout)
+        self.span_decoder = PointerNetDecoder(model_embedding_dim=self.model_embedding_dim, hidden_size=hidden_size,
+                                              dropout=dropout)
         self.distribution_decoder = None
         self.passage_classifier = None
 
@@ -60,23 +61,23 @@ class SNet(t.nn.Module):
         p_mask = get_input_mask(passage_word)
         q_lens = q_mask.sum(-1)
         p_lens = p_mask.sum(-1)
-        q_lens.masked_fill_(q_lens.eq(0), 1.0)
-        p_lens.masked_fill_(p_lens.eq(0), 1.0)
-
 
         dot_attention_mask = get_da_mask(q_mask, p_mask)
         self_attention_mask = get_sa_mask(p_mask)
         q_w = self.word_embedding(question_word)
         p_w = self.word_embedding(passage_word)
 
-        q_w, _ = self.question_word_encoder(q_w, q_lens)
-        p_w, _ = self.passage_word_encoder(p_w, p_lens)
+        q_w, _ = self.question_word_encoder(q_w)
+        q_w = q_w * q_mask.unsqueeze(-1)
+        p_w, _ = self.passage_word_encoder(p_w)
+        p_w = p_w * p_mask.unsqueeze(-1)
 
         q_c = self.char_embedding(question_char)
         p_c = self.char_embedding(passage_char)
 
         q_c = self.question_char_encoder(q_c)
         q_all = t.cat([q_w, q_c], dim=-1)
+
         p_c = self.passage_char_encoder(p_c)
         p_all = t.cat([p_w, p_c], dim=-1)
 
@@ -93,12 +94,12 @@ class SNet(t.nn.Module):
         passage_mask = p_mask.view(batch_size, self.passage_num, p_lenth)
         passage_mask = passage_mask.view(batch_size, self.passage_num * p_lenth)
 
-        start, end = self.span_decoder(passage=passage_info, query=query_info, passage_mask=passage_mask, query_mask=query_mask)
-        start = start.masked_fill((1-passage_mask).byte(), -1e30)
-        start = t.nn.functional.log_softmax(start, -1)
+        start_logits, end_logits, start_point, end_point = self.span_decoder(passage=passage_info, query=query_info, passage_mask=passage_mask, query_mask=query_mask)
+        #start = start.masked_fill((1-passage_mask).byte(), -1e20)
+        start = t.nn.functional.log_softmax(start_logits, -1)
 
-        end = end.masked_fill((1-passage_mask).byte(), -1e30)
-        end = t.nn.functional.log_softmax(end, -1)
+        #end = end.masked_fill((1-passage_mask).byte(), -1e20)
+        end = t.nn.functional.log_softmax(end_logits, -1)
         return start, end
 
 

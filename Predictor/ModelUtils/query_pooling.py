@@ -20,7 +20,8 @@ class AttentionPooling(t.nn.Module):
         :param input_mask: [B, L]
         :return: [B, E]
         """
-        input_mask = input_mask.byte()
+        if input_mask is not None:
+            input_mask = input_mask.byte()
         net = t.nn.functional.tanh(self.projection1(inputs))
         # [B, L, H]
         net = self.projection2(net).squeeze(-1)
