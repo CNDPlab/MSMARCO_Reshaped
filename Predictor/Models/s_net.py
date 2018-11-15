@@ -53,8 +53,6 @@ class SNet(t.nn.Module):
         self.passage_classifier = None
 
     def forward(self, question_word, question_char, passage_word, passage_char):
-        print(passage_word.ne(0).sum(-1).max())
-        ipdb.set_trace()
         fake_batch_size, q_lenth = question_word.size()
         _, p_lenth = passage_word.size()
         batch_size = int(fake_batch_size / self.passage_num)
@@ -66,7 +64,6 @@ class SNet(t.nn.Module):
         self_attention_mask = get_sa_mask(p_mask)
         q_w = self.word_embedding(question_word)
         p_w = self.word_embedding(passage_word)
-        ipdb.set_trace()
         q_w, _ = self.question_word_encoder(q_w, q_lens)
         p_w, _ = self.passage_word_encoder(p_w, p_lens)
         # q_w, _ = self.question_word_encoder(q_w)
@@ -117,7 +114,7 @@ if __name__ == '__main__':
         start_logits, end_logits = model(question_word, question_char, passage_word, passage_char)
         for i in zip(start_logits, end_logits, start, end):
             try:
-                loss = boundary_loss_func(i[0].unsqueeze(0),i[1].unsqueeze(0),i[2].unsqueeze(0),i[3].unsqueeze(0))
+                loss = boundary_loss_func(i[0].unsqueeze(0),i[1].unsqueeze(0),i[2].unsqueeze(0), i[3].unsqueeze(0))
                 print(loss)
             except:
                 ipdb.set_trace()

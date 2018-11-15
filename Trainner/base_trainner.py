@@ -95,6 +95,8 @@ class BaseTrainner(object):
         print("--------moving model to gpu")
         if self.use_multi_gpu:
             self.model = t.nn.DataParallel(self.model).cuda()
+        else:
+            self.model.cuda()
         print("--------initializing optimizer")
 
         if word_vocab is not None:
