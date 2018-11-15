@@ -88,6 +88,8 @@ class CustomRnn(t.nn.Module):
         super(CustomRnn, self).__init__()
         self.rnn = t.nn.LSTM(input_size, hidden_size, batch_first=True, num_layers=num_layers,
                             bidirectional=bidirectional, dropout=dropout)
+        t.nn.init.orthogonal_(self.rnn.weight_hh_l0)
+        t.nn.init.orthogonal_(self.rnn.weight_ih_l0)
 
     def forward(self, inputs, lenths=None, init_states=None):
         batch_size = inputs.size(0)

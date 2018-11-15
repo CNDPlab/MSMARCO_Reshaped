@@ -25,6 +25,8 @@ class PointerNetDecoder(t.nn.Module):
         t.nn.init.xavier_normal_(self.end_passage_linear.weight)
         t.nn.init.xavier_normal_(self.end_info_linear.weight)
         t.nn.init.xavier_normal_(self.end_attention_linear.weight)
+        t.nn.init.orthogonal_(self.rnn.weight_hh_l0)
+        t.nn.init.orthogonal_(self.rnn.weight_ih_l0)
 
         self.C = hidden_size ** 0.5
 

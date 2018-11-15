@@ -72,10 +72,11 @@ class SNet(t.nn.Module):
         p_c = self.char_embedding(passage_char)
 
         q_c = self.question_char_encoder(q_c)
-        q_all = t.cat([q_w, q_c], dim=-1)
+
+        q_all = t.cat([q_w, q_c * q_mask.unsqueeze(-1)], dim=-1)
 
         p_c = self.passage_char_encoder(p_c)
-        p_all = t.cat([p_w, p_c], dim=-1)
+        p_all = t.cat([p_w, p_c * p_mask.unsqueeze(-1)], dim=-1)
 
         net, _ = self.dot_attention(query=q_all, key=p_all, value=p_all, attention_mask=dot_attention_mask)
         net, _ = self.self_attention(query=net, key=net, value=net, attention_mask=self_attention_mask)
@@ -91,10 +92,10 @@ class SNet(t.nn.Module):
 
         start_logits, end_logits, start_point, end_point = self.span_decoder(passage=passage_info, query=query_info, passage_mask=passage_mask, query_mask=query_mask)
         start = start_logits.masked_fill((1-passage_mask).byte(), -1e30)
-        start = t.nn.functional.log_softmax(start, -1)
+        start = t.nn.functional.log_softmax(start / (1/11.0), -1)
 
         end = end_logits.masked_fill((1-passage_mask).byte(), -1e30)
-        end = t.nn.functional.log_softmax(end, -1)
+        end = t.nn.functional.log_softmax(end / (1/11.0), -1)
         return start, end
 
 
@@ -106,7 +107,7 @@ if __name__ == '__main__':
     from tqdm import tqdm
     from Loaders import get_dataloader
     from Predictor.Tools.Matrixs.LossFuncs import boundary_loss_func
-    dataloader = get_dataloader('dev', 24, 1)
+    dataloader = get_dataloader('dev', 2, 1)
     for batch in tqdm(dataloader):
         question_word, passage_word, question_char, passage_char, start, end, passage_index = [j for j in batch]
         print(passage_word.ne(0).sum(-1).max())
