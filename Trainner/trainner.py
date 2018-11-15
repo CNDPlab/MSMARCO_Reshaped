@@ -65,8 +65,10 @@ class Trainner(BaseTrainner):
         return eval_loss, eval_score
 
     def train_inference(self, data):
-        question_word, passage_word, question_char, passage_char, start, end, passage_index = [j.cuda() for j in data]
         self.optim.zero_grad()
+        question_word, passage_word, question_char, passage_char, start, end, passage_index = [j.cuda() for j in data]
+        print(passage_word.shape)
+        print(passage_word.ne(0).sum(-1).max())
         pre_start, pre_end = self.model(question_word, question_char, passage_word, passage_char)
         loss = self.loss_func(pre_start, pre_end, start, end)
         # if (self.global_step==1)&(self.summary_writer is not None):

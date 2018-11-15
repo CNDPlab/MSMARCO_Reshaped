@@ -53,24 +53,24 @@ class SNet(t.nn.Module):
         self.passage_classifier = None
 
     def forward(self, question_word, question_char, passage_word, passage_char):
+        print(passage_word.ne(0).sum(-1).max())
+        ipdb.set_trace()
         fake_batch_size, q_lenth = question_word.size()
         _, p_lenth = passage_word.size()
         batch_size = int(fake_batch_size / self.passage_num)
-
         q_mask = get_input_mask(question_word)
         p_mask = get_input_mask(passage_word)
-        #q_lens = q_mask.sum(-1)
-        #p_lens = p_mask.sum(-1)
-
+        q_lens = q_mask.sum(-1)
+        p_lens = p_mask.sum(-1)
         dot_attention_mask = get_da_mask(q_mask, p_mask)
         self_attention_mask = get_sa_mask(p_mask)
         q_w = self.word_embedding(question_word)
         p_w = self.word_embedding(passage_word)
-
-        # q_w, _ = self.question_word_encoder(q_w, q_lens)
-        # p_w, _ = self.passage_word_encoder(p_w, p_lens)
-        q_w, _ = self.question_word_encoder(q_w)
-        p_w, _ = self.passage_word_encoder(p_w)
+        ipdb.set_trace()
+        q_w, _ = self.question_word_encoder(q_w, q_lens)
+        p_w, _ = self.passage_word_encoder(p_w, p_lens)
+        # q_w, _ = self.question_word_encoder(q_w)
+        # p_w, _ = self.passage_word_encoder(p_w)
         q_c = self.char_embedding(question_char)
         p_c = self.char_embedding(passage_char)
 
@@ -93,10 +93,10 @@ class SNet(t.nn.Module):
         passage_mask = passage_mask.view(batch_size, self.passage_num * p_lenth)
 
         start_logits, end_logits, start_point, end_point = self.span_decoder(passage=passage_info, query=query_info, passage_mask=passage_mask, query_mask=query_mask)
-        start = start_logits.masked_fill((1-passage_mask).byte(), -1e20)
+        start = start_logits.masked_fill((1-passage_mask).byte(), -1e30)
         start = t.nn.functional.log_softmax(start, -1)
 
-        end = end_logits.masked_fill((1-passage_mask).byte(), -1e20)
+        end = end_logits.masked_fill((1-passage_mask).byte(), -1e30)
         end = t.nn.functional.log_softmax(end, -1)
         return start, end
 
@@ -112,6 +112,7 @@ if __name__ == '__main__':
     dataloader = get_dataloader('dev', 24, 1)
     for batch in tqdm(dataloader):
         question_word, passage_word, question_char, passage_char, start, end, passage_index = [j for j in batch]
+        print(passage_word.ne(0).sum(-1).max())
         model = SNet(hidden_size=64, dropout=0.1, num_head=4)
         start_logits, end_logits = model(question_word, question_char, passage_word, passage_char)
         for i in zip(start_logits, end_logits, start, end):

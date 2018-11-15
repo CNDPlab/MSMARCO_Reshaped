@@ -11,8 +11,8 @@
 ## Usage
 
 * Preprocess:   
-'python preprocess.py'
+python preprocess.py
   
 * train:
-'python main.py train --batch_size=32'
+python main.py train --batch_size=32
 
