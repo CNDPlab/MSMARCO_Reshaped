@@ -6,6 +6,7 @@ import numpy as np
 from tqdm import tqdm
 import shutil
 import ipdb
+t.optim.lr_scheduler.ReduceLROnPlateau
 #
 #
 # class ScheduledOptim(object):

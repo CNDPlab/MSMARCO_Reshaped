@@ -1,6 +1,5 @@
 import fire
 import torch as t
-from torch.utils.data import DataLoader
 from Predictor import Models
 from Trainner import Trainner
 import fire
@@ -28,6 +27,10 @@ def train(**kwargs):
     trainner.init_trainner(word_vocab=word_vocab, char_vocab=char_vocab)
     print("----Train model----")
     trainner.train()
+
+def predict(**kwargs):
+    pass
+
 
 if __name__ == '__main__':
     fire.Fire()

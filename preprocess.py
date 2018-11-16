@@ -76,7 +76,7 @@ with open(os.path.join(DefaultConfig.processed_folder, 'train_tmp.json')) as rea
     with open(os.path.join(DefaultConfig.processed_folder, 'train.json'), 'w') as writer:
         for i in tqdm(reader):
             line = json.loads(i)
-            if line['golden_span']['score'] > 0.8:
+            if line['golden_span']['score'] > 0.8 and line['golden_span']['end'] >= 0 and line['golden_span']['start'] >= 0:
                 json.dump(line, writer)
                 writer.write('\n')
             else:
@@ -95,7 +95,7 @@ with open(os.path.join(DefaultConfig.processed_folder, 'dev_tmp.json')) as reade
     with open(os.path.join(DefaultConfig.processed_folder, 'dev.json'), 'w') as writer:
         for i in tqdm(reader):
             line = json.loads(i)
-            if line['golden_span']['score'] > 0:
+            if line['golden_span']['score'] > 0 and line['golden_span']['end'] >= 0 and line['golden_span']['start'] >= 0:
                 json.dump(line, writer)
                 writer.write('\n')
             else:

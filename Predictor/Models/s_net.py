@@ -107,15 +107,14 @@ if __name__ == '__main__':
     from tqdm import tqdm
     from Loaders import get_dataloader
     from Predictor.Tools.Matrixs.LossFuncs import boundary_loss_func
-    dataloader = get_dataloader('dev', 2, 1)
+    dataloader = get_dataloader('train', 32, 16)
     for batch in tqdm(dataloader):
         question_word, passage_word, question_char, passage_char, start, end, passage_index = [j for j in batch]
-        print(passage_word.ne(0).sum(-1).max())
         model = SNet(hidden_size=64, dropout=0.1, num_head=4)
         start_logits, end_logits = model(question_word, question_char, passage_word, passage_char)
         for i in zip(start_logits, end_logits, start, end):
             try:
-                loss = boundary_loss_func(i[0].unsqueeze(0),i[1].unsqueeze(0),i[2].unsqueeze(0), i[3].unsqueeze(0))
+                loss = boundary_loss_func(i[0].unsqueeze(0), i[1].unsqueeze(0), i[2].unsqueeze(0), i[3].unsqueeze(0))
                 print(loss)
             except:
                 ipdb.set_trace()

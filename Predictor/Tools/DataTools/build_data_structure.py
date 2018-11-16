@@ -51,6 +51,6 @@ def build_data_structure(instance):
             else:
                 processed_structure['passages'][index]['text'] = passage['passage_text'].replace("''", '" ').replace("``", '" ')
                 processed_structure['passages'][index]['is_selected'] = passage['is_selected']
-
-
     return processed_structure
+
+
