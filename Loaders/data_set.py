@@ -31,7 +31,7 @@ class MSDataSet(Dataset):
             if set == 'dev':
                 self.data = reader.readlines()[:10240]
             else:
-                self.data = reader.readlines()
+                self.data = reader.readlines()[:576000]
 
     def __len__(self):
         return len(self.data)

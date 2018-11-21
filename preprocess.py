@@ -32,24 +32,24 @@ for line in tqdm(MiddleIter):
     line = json.loads(line)
     for index, answer in line['answers'].items():
         if answer['text'] != '':
-            word_vocab.add_sentance(answer['text'])
+            word_vocab.add_sentance_token(answer['text'])
         for word in answer['char']:
-            char_vocab.add_sentance(word)
+            char_vocab.add_sentance_token(word)
     for index, passage in line['passages'].items():
         if passage['text'] != '':
-            word_vocab.add_sentance(passage['text'])
+            word_vocab.add_sentance_token(passage['text'])
         for word in passage['char']:
-            char_vocab.add_sentance(word)
+            char_vocab.add_sentance_token(word)
 
-    word_vocab.add_sentance(line['question']['text'])
+    word_vocab.add_sentance_token(line['question']['text'])
     for word in line['question']['char']:
-        char_vocab.add_sentance(word)
+        char_vocab.add_sentance_token(word)
 
-word_vocab.filter_rare_word_build_vocab(10)
+word_vocab.filter_rare_token_build_vocab(5)
 word_vocab.use_pretrained(model)
 word_vocab.save(DefaultConfig.word_vocab)
 
-char_vocab.filter_rare_word_build_vocab(300)
+char_vocab.filter_rare_token_build_vocab(300)
 char_vocab.random_init(DefaultConfig.char_embedding_dim)
 char_vocab.save(DefaultConfig.char_vocab)
 
