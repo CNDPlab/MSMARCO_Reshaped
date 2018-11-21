@@ -10,14 +10,14 @@ class VocabCollector(object):
         for index, answer in instance['answers'].items():
             if answer['text'] != []:
                 instance['answers'][index]['text'] = self.word_vocab.convert(answer['text'], 't2i')
-                instance['answers'][index]['char'] = self.char_vocab.convert(answer['text'], 'lt2i')
+                instance['answers'][index]['char'] = self.char_vocab.convert(answer['char'], 'lt2i')
         for index, passage in instance['passages'].items():
             if passage['text'] != []:
                 instance['passages'][index]['text'] = self.word_vocab.convert(passage['text'], 't2i')
-                instance['passages'][index]['char'] = self.char_vocab.convert(passage['text'], 'lt2i')
+                instance['passages'][index]['char'] = self.char_vocab.convert(passage['char'], 'lt2i')
 
         instance['question']['text'] = self.word_vocab.convert(instance['question']['text'], 't2i')
-        instance['question']['char'] = self.char_vocab.convert(instance['question']['text'], 'lt2i')
+        instance['question']['char'] = self.char_vocab.convert(instance['question']['char'], 'lt2i')
         return instance
 
     def transfer_char(self, instance):

@@ -53,6 +53,11 @@ char_vocab.filter_rare_token_build_vocab(300)
 char_vocab.random_init(DefaultConfig.char_embedding_dim)
 char_vocab.save(DefaultConfig.char_vocab)
 
+
+
+
+
+
 from Predictor.Tools.DataTools.convert2id import convert2id
 # convert
 
@@ -101,7 +106,7 @@ with open(os.path.join(DefaultConfig.processed_folder, 'dev_tmp.json')) as reade
             else:
                 count += 1
 
-
 print(f'{count} droped')
+
 
 
